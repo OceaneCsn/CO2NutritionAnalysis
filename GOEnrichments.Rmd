@@ -1,0 +1,133 @@
+---
+title: "Analyse d'expression transcriptomique mutli-facteurs : Fer, Azote et CO2"
+subtitle: "Enrichissement en ontologies"
+author: "Océane Cassan"
+date: "10/25/2019"
+output: 
+  rmdformats::material:
+    fig_width: 12
+    highlight: kate
+    includes:
+        after_body: ./Imports/footer.html
+---
+
+Enrichissement sur chaque liste de DEGs pour les up et les down régulés.  (Biological Process)
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr, warn.conflicts = F, quietly = T)
+library(rmdformats, warn.conflicts = F, quietly = T)
+
+
+setwd("~/Documents/CombinatoireFeNCO2/Analyses")
+
+## Global options
+options(max.print="75")
+opts_chunk$set(cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               fig.align = "center")
+opts_knit$set(width=75)
+suppressMessages(library(clusterProfiler, warn.conflicts = F, quietly = T))
+
+suppressMessages(library(gridExtra, warn.conflicts = F, quietly = T))
+suppressMessages(library(stringr, warn.conflicts = F, quietly = T))
+suppressMessages(library(ggplot2, warn.conflicts = F, quietly = T))
+suppressMessages(library(ggpubr, warn.conflicts = F, quietly = T))
+
+#self written functions for differential expression
+source("./Imports/ToolFunctions.R")
+source("./Imports/VisuFunctions.R")
+
+PATH_TO_DEG <- "~/Documents/CombinatoireFeNCO2/DEG_CombinatoireCO2_Fe_N/Arabidopsis/"
+```
+
+# Essai sur une comparaison : effet CO2 en faible nitrate
+
+```{r}
+load("./Data/AGIToEntrez.RDAta")
+# OntologyEnrich <- function(ids, universe, plot = T){
+#   # ids and universe must be entrez gene ids
+#   ego <- enrichGO(gene = ids,
+#                   OrgDb = org.At.tair.db,
+#                   ont = "BP",
+#                   universe = universe,
+#                   pAdjustMethod = "BH",
+#                   pvalueCutoff  = 0.01,
+#                   qvalueCutoff  = 0.05,
+#                   readable = TRUE)
+#   
+#   # Elimine les redondances, en fusionnant les GO terms dont la similarite excede le cutoff
+#   simpOnt <- simplify(ego, cutoff=0.9, by="p.adjust", select_fun=min)
+#   result <- simpOnt@result
+#   if(plot){
+#     print(barplot(simpOnt, showCategory = 40, font.size = 10))
+#     print(emapplot(simpOnt, layout = "kk"))
+#   }
+#   return(simpOnt)
+# }
+
+OntologyAnalysis <- function(comp){
+  print("----------------------------------------------------------------")
+  print(paste0("------------------------", comp))
+  print("----------------------------------------------------------------")
+
+  filename = paste0(path,translateToOSX(comp), ".txt")
+  At <- read.csv(filename, h=T, sep = "\t")
+  up <- At[At$flc > 0,]$entrezgene_id
+  down <- At[At$flc < 0,]$entrezgene_id
+  print("------------------------ Up regulated --------------------------")
+  enrich_up <- OntologyEnrich(ids = up, universe = as.character(AGIToEntrez$entrezgene_id))
+  print("------------------------ Down regulated --------------------------")
+  enrich_down <- OntologyEnrich(ids = down, universe = as.character(AGIToEntrez$entrezgene_id))
+  print("------------------------ Comparison --------------------------")
+  entrezIDreg = list("Activated" = up, "Repressed" = down)
+  sin <- compareOnt(entrezIDreg, universe = as.character(AGIToEntrez$entrezgene_id))
+  write.table(sin, quote = F, row.names = F, file = paste0(path, "GO_enrich_",translateToOSX(comp), '.txt'), sep = '\t')
+  print(kable(sin[grepl("nitr", sin$Description),]))
+  print(kable(sin[grepl("oxi", sin$Description),]))
+  print(kable(sin[grepl("oxy", sin$Description),]))
+  print(kable(sin[grepl("starv", sin$Description),]))
+}
+
+```
+On remarque que la voie nitrate n'apparaîtt que dans les gènes downrégulés, ce qui est cohérent avec nos connaissances. 
+
+# DEG CO2
+
+```{r co2}
+path <- paste0(PATH_TO_DEG, "/FactorCO2/")
+
+OntologyAnalysis(c("cNF", "CNF"))
+OntologyAnalysis(c("cnF", "CnF"))
+OntologyAnalysis(c("cNf", "CNf"))
+OntologyAnalysis(c("cnf", "Cnf"))
+```
+
+# DEG Nitrate
+
+```{r nitrate}
+path <- paste0(PATH_TO_DEG, "/FactorNitrate/")
+
+OntologyAnalysis(c("cNF", "cnF"))
+OntologyAnalysis(c("CNF", "CnF"))
+OntologyAnalysis(c("cNf", "cnf"))
+OntologyAnalysis(c("CNf", "Cnf"))
+```
+
+
+# DEG Fer
+
+```{r fer}
+path <- paste0(PATH_TO_DEG, "/FactorIron/")
+
+OntologyAnalysis(c("cNF", "cNf"))
+OntologyAnalysis(c("cnF", "cnf"))
+OntologyAnalysis(c("CNF", "CNf"))
+OntologyAnalysis(c("CnF", "Cnf"))
+```
+
+
+
