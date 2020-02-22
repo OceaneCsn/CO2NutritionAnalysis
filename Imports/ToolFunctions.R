@@ -38,7 +38,7 @@ OntologyEnrich <- function(ids, universe, plot = T){
                   readable = TRUE)
   
   # Elimine les redondances, en fusionnant les GO terms dont la similarite excede le cutoff
-  simpOnt <- clusterProfiler::simplify(ego, cutoff=0.9, by="p.adjust", select_fun=min)
+  simpOnt <- clusterProfiler::simplify(ego, cutoff=0.65, by="p.adjust", select_fun=min)
   result <- simpOnt@result
   if(plot){
     print(barplot(simpOnt, showCategory = 40, font.size = 10))
@@ -52,7 +52,7 @@ compareOnt <- function(idsList, universe){
   ckreg <- compareCluster(geneCluster = idsList, fun = "enrichGO", OrgDb = org.At.tair.db, ont = "BP", pAdjustMethod = "BH", 
                           pvalueCutoff = 0.01, qvalueCutoff = 0.05, universe = universe)
   ckreg@compareClusterResult
-  simCk <- clusterProfiler::simplify(ckreg, cutoff=0.9, by="p.adjust", select_fun=min)
+  simCk <- clusterProfiler::simplify(ckreg, cutoff=0.65, by="p.adjust", select_fun=min)
   resCk <- simCk@compareClusterResult
   print(dotplot(simCk, x = ~Cluster, showCategory = 15, font.size = 10))
   return(resCk)
@@ -88,7 +88,6 @@ translateToOSX <- function(labels){
 ######################## Poisson mixture model for gene clustering on expression
 
 clustering <- function(DEgenes, data, nb_clusters = 2:12){
-
   conds = colnames(data)
   groups <- str_split_fixed(conds, '_', 2)[,1]
   dataC <- data[DEgenes,conds]

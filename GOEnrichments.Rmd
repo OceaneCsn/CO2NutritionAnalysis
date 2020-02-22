@@ -85,7 +85,7 @@ OntologyAnalysis <- function(comp){
   print("------------------------ Comparison --------------------------")
   entrezIDreg = list("Activated" = up, "Repressed" = down)
   sin <- compareOnt(entrezIDreg, universe = as.character(AGIToEntrez$entrezgene_id))
-  write.table(sin, quote = F, row.names = F, file = paste0(path, "GO_enrich_",translateToOSX(comp), '.txt'), sep = '\t')
+  #write.table(sin, quote = F, row.names = F, file = paste0(path, "GO_enrich_",translateToOSX(comp), '.txt'), sep = '\t')
   print(kable(sin[grepl("nitr", sin$Description),]))
   print(kable(sin[grepl("oxi", sin$Description),]))
   print(kable(sin[grepl("oxy", sin$Description),]))
