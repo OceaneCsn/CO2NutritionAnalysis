@@ -26,7 +26,7 @@ OntologyProfile <- function(ids, specie="At", plot = T){
   }
 }
 
-OntologyEnrich <- function(ids, universe, plot = T){
+OntologyEnrich <- function(ids, universe, plot = T, simCutoff = 0.8){
   # ids and universe must be entrez gene ids
   ego <- enrichGO(gene = ids,
                   OrgDb = org.At.tair.db,
@@ -38,7 +38,7 @@ OntologyEnrich <- function(ids, universe, plot = T){
                   readable = TRUE)
   
   # Elimine les redondances, en fusionnant les GO terms dont la similarite excede le cutoff
-  simpOnt <- clusterProfiler::simplify(ego, cutoff=0.65, by="p.adjust", select_fun=min)
+  simpOnt <- clusterProfiler::simplify(ego, cutoff=simCutoff, by="p.adjust", select_fun=min)
   result <- simpOnt@result
   if(plot){
     print(barplot(simpOnt, showCategory = 40, font.size = 10))
@@ -48,13 +48,13 @@ OntologyEnrich <- function(ids, universe, plot = T){
 }
 
 
-compareOnt <- function(idsList, universe){
+compareOnt <- function(idsList, universe, simCutoff = 0.8){
   ckreg <- compareCluster(geneCluster = idsList, fun = "enrichGO", OrgDb = org.At.tair.db, ont = "BP", pAdjustMethod = "BH", 
                           pvalueCutoff = 0.01, qvalueCutoff = 0.05, universe = universe)
   ckreg@compareClusterResult
-  simCk <- clusterProfiler::simplify(ckreg, cutoff=0.65, by="p.adjust", select_fun=min)
+  simCk <- clusterProfiler::simplify(ckreg, cutoff=simCutoff, by="p.adjust", select_fun=min)
   resCk <- simCk@compareClusterResult
-  print(dotplot(simCk, x = ~Cluster, showCategory = 15, font.size = 10))
+  print(dotplot(simCk, x = ~Cluster, showCategory = 25, font.size = 7))
   return(resCk)
 }
 
@@ -95,5 +95,17 @@ clustering <- function(DEgenes, data, nb_clusters = 2:12){
   print(coseq::plot(run_pois, conds = groups, collapse_reps="average", graphs = c("ICL", "boxplots", "profiles", "probapost_barplots")))
   print(summary(run_pois))
   clusters_per_genes <- coseq::clusters(run_pois)
-  return(clusters_per_genes)
+  return(list(clusters_per_genes, run_pois))
+}
+
+
+writeExpression <- function(comp){
+  filename = paste0(path,translateToOSX(comp), ".txt")
+  At <- read.csv(filename, h=T, sep = "\t")
+  # mean expression for the three replicates
+  for(c in comp){
+    At[,c] <- rowMeans(normalized.count[match(At$ensembl_gene_id, rownames(normalized.count)),grepl(c, colnames(normalized.count))])
+  }
+  At$MeanNormalizedExpression <- rowMeans(At[,comp])
+  write.table(x = At, file = filename, quote = F, sep = '\t', row.names = F)
 }

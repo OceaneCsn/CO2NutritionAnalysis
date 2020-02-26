@@ -1,0 +1,136 @@
+---
+title: "Analyse d'expression transcriptomique mutli-facteurs : Fer, Azote et CO2"
+subtitle: "Clustering"
+author: "Océane Cassan"
+date: "10/25/2019"
+output: 
+  rmdformats::material:
+    fig_width: 15
+    fig_height: 17
+    highlight: kate
+    includes:
+      after_body: ./Imports/footer.html
+---
+  
+Etude par clustrering des gènes détectés comme différentiellement exprimés par le CO2, le fer et le nitrate.
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr, warn.conflicts = F, quietly = T)
+library(rmdformats, warn.conflicts = F, quietly = T)
+
+
+#setwd("~/Documents/CombinatoireFeNCO2/Analyses")
+setwd("D:/These/CO2NutritionAnalysis/")
+
+## Global options
+options(max.print="75")
+opts_chunk$set(cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               fig.align = "center")
+opts_knit$set(width=75)
+
+suppressMessages(library(gridExtra, warn.conflicts = F, quietly = T))
+suppressMessages(library(stringr, warn.conflicts = F, quietly = T))
+suppressMessages(library(ggplot2, warn.conflicts = F, quietly = T))
+suppressMessages(library(ggpubr, warn.conflicts = F, quietly = T))
+
+#self written functions for differential expression
+source("./Imports/ToolFunctions.R")
+source("./Imports/VisuFunctions.R")
+
+#PATH_TO_DEG <- "~/Documents/CombinatoireFeNCO2/DEG_CombinatoireCO2_Fe_N/Arabidopsis/"
+PATH_TO_DEG <- "D:/These/Thesis/DEG_CombinatoireCO2_Fe_N/Arabidopsis"
+```
+
+# Construction de la liste des DEG par comparaison
+
+```{r}
+geneList <- function(comp, filter=T){
+  filename = paste0(path,translateToOSX(comp), ".txt")
+  At <- read.csv(filename, h=T, sep = "\t")
+  if(filter){At <- At[At$MeanNormalizedExpression > 30,]}
+  return(as.vector(At$ensembl_gene_id))
+}
+```
+
+On génère la liste des DEGs pour chaque comparaisons, avec un filtre sur l'expression minimale ou non (expression moyenne entre les deux conditions)
+
+```{r list}
+DEGs <- list()
+
+path <- paste0(PATH_TO_DEG, "/FactorCO2/")
+
+FactorCO2 <- c(paste("cNF", "CNF"), paste("cnF", "CnF"),paste("cNf", "CNf"), paste("cnf", "Cnf"))
+FactorNitrate <- c(paste("cNF", "cnF"), paste("CNF", "CnF"),paste("cNf", "cnf"), paste("CNf", "Cnf"))
+FactorIron <- c(paste("cNF", "cnF"), paste("CNF", "CnF"),paste("cNf", "cnf"), paste("CNf", "Cnf"))
+
+DEGs[[paste("cNF", "CNF")]] <- geneList(c("cNF", "CNF"))
+DEGs[[paste("cnF", "CnF")]] <- geneList(c("cnF", "CnF"))
+DEGs[[paste("cNf", "CNf")]] <- geneList(c("cNf", "CNf"))
+DEGs[[paste("cnf", "Cnf")]] <- geneList(c("cnf", "Cnf"))
+path <- paste0(PATH_TO_DEG, "/FactorNitrate/")
+DEGs[[paste("cNF", "cnF")]] <- geneList(c("cNF", "cnF"))
+DEGs[[paste("CNF", "CnF")]] <- geneList(c("CNF", "CnF"))
+DEGs[[paste("cNf", "cnf")]] <- geneList(c("cNf", "cnf"))
+DEGs[[paste("CNf", "Cnf")]] <- geneList(c("CNf", "Cnf"))
+path <- paste0(PATH_TO_DEG, "/FactorIron/")
+DEGs[[paste("cNF", "cNf")]] <- geneList(c("cNF", "cNf"))
+DEGs[[paste("cnF", "cnf")]] <- geneList(c("cnF", "cnf"))
+DEGs[[paste("CNF", "CNf")]] <- geneList(c("CNF", "CNf"))
+DEGs[[paste("CnF", "Cnf")]] <- geneList(c("CnF", "Cnf"))
+
+
+save(DEGs, file = "./Data/DEGsLists.RData")
+```
+
+# Clustering global
+
+
+On commence par prendre l'union de toutes les listes de DEGs : 12 comparaisons au total. On a 15000 gènes DEG dans un moins une des 12 analyses, sur les 27 000 d'Arabidopsis.
+
+```{r global}
+load("./Data/normalized.count_At.RData")
+load("./Data/AGIToEntrez.RDAta")
+
+#heatmap(normalized.count[sample(genes, size = 700),!grepl("cNF_1", colnames(normalized.count))])
+
+clustersOntology <- function(DEGs){
+  genes <- unique(unlist(DEGs))
+  cluster <- clustering(genes, round(normalized.count, 0), nb_clusters = 8:14)
+  
+  entrez <- list()
+  idsList <- cluster[[1]]
+  for(k in 1:max(idsList)){
+    genesList <- names(idsList[idsList==k])
+    entrez[[as.character(k)]] <- as.vector(na.omit(AGIToEntrez[match(genesList, AGIToEntrez$ensembl_gene_id),]$entrezgene_id))
+  }
+  res <- compareOnt(entrez, universe = na.omit(as.character(AGIToEntrez$entrezgene_id)))
+}
+
+clustersOntology(DEGs)
+```
+
+# Genes CO2
+
+```{r co2}
+
+clustersOntology(DEGs[FactorCO2])
+```
+# Genes Nitrate
+
+```{r nitrate}
+
+clustersOntology(DEGs[FactorNitrate])
+```
+
+
+# Genes Fer
+
+```{r iron}
+
+clustersOntology(DEGs[FactorIron])
+```
