@@ -42,8 +42,8 @@ suppressMessages(library(ggpubr, warn.conflicts = F, quietly = T))
 source("./Imports/ToolFunctions.R")
 source("./Imports/VisuFunctions.R")
 
-#PATH_TO_DEG <- "~/Documents/CombinatoireFeNCO2/DEG_CombinatoireCO2_Fe_N/Arabidopsis/"
-PATH_TO_DEG <- "D:/These/Thesis/DEG_CombinatoireCO2_Fe_N/Arabidopsis"
+PATH_TO_DEG <- "~/Documents/CombinatoireFeNCO2/DEG_CombinatoireCO2_Fe_N/Arabidopsis/"
+#PATH_TO_DEG <- "D:/These/Thesis/DEG_CombinatoireCO2_Fe_N/Arabidopsis"
 ```
 
 # Essai sur une comparaison : effet CO2 en faible nitrate

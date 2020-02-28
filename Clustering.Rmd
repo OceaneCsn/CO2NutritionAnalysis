@@ -19,8 +19,8 @@ library(knitr, warn.conflicts = F, quietly = T)
 library(rmdformats, warn.conflicts = F, quietly = T)
 
 
-#setwd("~/Documents/CombinatoireFeNCO2/Analyses")
-setwd("D:/These/CO2NutritionAnalysis/")
+setwd("~/Documents/CombinatoireFeNCO2/Analyses")
+#setwd("D:/These/CO2NutritionAnalysis/")
 
 ## Global options
 options(max.print="75")
@@ -42,17 +42,18 @@ suppressMessages(library(ggpubr, warn.conflicts = F, quietly = T))
 source("./Imports/ToolFunctions.R")
 source("./Imports/VisuFunctions.R")
 
-#PATH_TO_DEG <- "~/Documents/CombinatoireFeNCO2/DEG_CombinatoireCO2_Fe_N/Arabidopsis/"
-PATH_TO_DEG <- "D:/These/Thesis/DEG_CombinatoireCO2_Fe_N/Arabidopsis"
+PATH_TO_DEG <- "~/Documents/Seafile/Thesis/DEG_CombinatoireCO2_Fe_N/ArabidopsisFiltered/"
+
+#PATH_TO_DEG <- "D:/These/Thesis/DEG_CombinatoireCO2_Fe_N/Arabidopsis"
 ```
 
 # Construction de la liste des DEG par comparaison
 
 ```{r}
-geneList <- function(comp, filter=T){
+geneList <- function(comp, filter=F){
   filename = paste0(path,translateToOSX(comp), ".txt")
   At <- read.csv(filename, h=T, sep = "\t")
-  if(filter){At <- At[At$MeanNormalizedExpression > 30,]}
+  if(filter){At <- At[At$meanNormalizedExpression > 30,]}
   return(as.vector(At$ensembl_gene_id))
 }
 ```
@@ -84,7 +85,7 @@ DEGs[[paste("CNF", "CNf")]] <- geneList(c("CNF", "CNf"))
 DEGs[[paste("CnF", "Cnf")]] <- geneList(c("CnF", "Cnf"))
 
 
-save(DEGs, file = "./Data/DEGsLists.RData")
+save(DEGs, file = "./Data/DEGsListsFiltered.RData")
 ```
 
 # Clustering global
@@ -100,7 +101,7 @@ load("./Data/AGIToEntrez.RDAta")
 
 clustersOntology <- function(DEGs){
   genes <- unique(unlist(DEGs))
-  cluster <- clustering(genes, round(normalized.count, 0), nb_clusters = 8:14)
+  cluster <- clustering(genes, round(normalized.count, 0), nb_clusters = 7:14)
   
   entrez <- list()
   idsList <- cluster[[1]]
@@ -117,13 +118,12 @@ clustersOntology(DEGs)
 # Genes CO2
 
 ```{r co2}
-
 clustersOntology(DEGs[FactorCO2])
 ```
+
 # Genes Nitrate
 
 ```{r nitrate}
-
 clustersOntology(DEGs[FactorNitrate])
 ```
 
@@ -131,6 +131,31 @@ clustersOntology(DEGs[FactorNitrate])
 # Genes Fer
 
 ```{r iron}
-
 clustersOntology(DEGs[FactorIron])
+```
+
+
+# CO2 contrôles
+
+```{r co21}
+clustersOntology(DEGs$`cNF CNF`)
+```
+
+# CO2 faibles nitrates
+
+
+```{r co22}
+clustersOntology(DEGs$`cnF CnF`)
+```
+
+# Nitrate contrôle
+
+```{r nitrates1}
+clustersOntology(DEGs$`cNF cnF`)
+```
+
+# Nitrate fort CO2
+
+```{r nitrates2}
+clustersOntology(DEGs$`CNF CnF`)
 ```
