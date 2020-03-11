@@ -7,8 +7,6 @@ suppressMessages(library(ggplot2, warn.conflicts = F, quietly = T))
 
 heatmapPerso <- function(normalized.count, genes=NA, conds="all", specie="At", geneNames=NA){
   if(length(genes) < 1){genes <- rownames(normalized.count)[1:6]}
-  if(specie == "At") load("normalized.count_At.RData")
-  if(specie == "Sl") load("normalized.count_Sl.RData")
   if (length(conds) ==1){
     conds = colnames(normalized.count)
   }else{conds = grepl(conds[1], colnames(normalized.count)) | grepl(conds[2], colnames(normalized.count))}
@@ -32,12 +30,10 @@ heatmapPerso <- function(normalized.count, genes=NA, conds="all", specie="At", g
 
 
 
-getExpression <- function(gene, conds = "all", specie = "At"){
+getExpression <- function(gene, normalized.count, conds = "all", specie = "At"){
   # Plots the expression levels of a given gene, using the normized.count data provoded.
   # conditions are all the columns of the data by default, or can be specified
   # biological replicated should be identified by _n
-  if(specie == "At") load("normalized.count_At.RData")
-  if(specie == "Sl") load("normalized.count_Sl.RData")
   if (length(conds) ==1){
     conds = colnames(normalized.count)
   }else{conds = grepl(conds[1], colnames(normalized.count)) | grepl(conds[2], colnames(normalized.count))}

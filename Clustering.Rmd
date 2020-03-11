@@ -61,31 +61,46 @@ geneList <- function(comp, filter=F){
 On génère la liste des DEGs pour chaque comparaisons, avec un filtre sur l'expression minimale ou non (expression moyenne entre les deux conditions)
 
 ```{r list}
+
+removeIronStarv = T
+
 DEGs <- list()
 
 path <- paste0(PATH_TO_DEG, "/FactorCO2/")
 
-FactorCO2 <- c(paste("cNF", "CNF"), paste("cnF", "CnF"),paste("cNf", "CNf"), paste("cnf", "Cnf"))
-FactorNitrate <- c(paste("cNF", "cnF"), paste("CNF", "CnF"),paste("cNf", "cnf"), paste("CNf", "Cnf"))
-FactorIron <- c(paste("cNF", "cnF"), paste("CNF", "CnF"),paste("cNf", "cnf"), paste("CNf", "Cnf"))
+FactorCO2 <- c(paste("cNF", "CNF"), paste("cnF", "CnF"))
+FactorNitrate <- c(paste("cNF", "cnF"), paste("CNF", "CnF"))
+
+if(!removeIronStarv){
+  FactorCO2 <- c(FactorCO2,paste("cNf", "CNf"), paste("cnf", "Cnf"))
+  FactorNitrate <- c(FactorNitrate,paste("cNf", "cnf"), paste("CNf", "Cnf"))
+  FactorIron <- c(paste("cNF", "cnF"), paste("CNF", "CnF"),paste("cNf", "cnf"), paste("CNf", "Cnf"))
+}
 
 DEGs[[paste("cNF", "CNF")]] <- geneList(c("cNF", "CNF"))
 DEGs[[paste("cnF", "CnF")]] <- geneList(c("cnF", "CnF"))
-DEGs[[paste("cNf", "CNf")]] <- geneList(c("cNf", "CNf"))
-DEGs[[paste("cnf", "Cnf")]] <- geneList(c("cnf", "Cnf"))
+
+if(!removeIronStarv){
+  DEGs[[paste("cNf", "CNf")]] <- geneList(c("cNf", "CNf"))
+  DEGs[[paste("cnf", "Cnf")]] <- geneList(c("cnf", "Cnf"))
+}
+
 path <- paste0(PATH_TO_DEG, "/FactorNitrate/")
 DEGs[[paste("cNF", "cnF")]] <- geneList(c("cNF", "cnF"))
 DEGs[[paste("CNF", "CnF")]] <- geneList(c("CNF", "CnF"))
-DEGs[[paste("cNf", "cnf")]] <- geneList(c("cNf", "cnf"))
-DEGs[[paste("CNf", "Cnf")]] <- geneList(c("CNf", "Cnf"))
-path <- paste0(PATH_TO_DEG, "/FactorIron/")
-DEGs[[paste("cNF", "cNf")]] <- geneList(c("cNF", "cNf"))
-DEGs[[paste("cnF", "cnf")]] <- geneList(c("cnF", "cnf"))
-DEGs[[paste("CNF", "CNf")]] <- geneList(c("CNF", "CNf"))
-DEGs[[paste("CnF", "Cnf")]] <- geneList(c("CnF", "Cnf"))
 
+if(!removeIronStarv){
+  DEGs[[paste("cNf", "cnf")]] <- geneList(c("cNf", "cnf"))
+  DEGs[[paste("CNf", "Cnf")]] <- geneList(c("CNf", "Cnf"))
+  path <- paste0(PATH_TO_DEG, "/FactorIron/")
+  DEGs[[paste("cNF", "cNf")]] <- geneList(c("cNF", "cNf"))
+  DEGs[[paste("cnF", "cnf")]] <- geneList(c("cnF", "cnf"))
+  DEGs[[paste("CNF", "CNf")]] <- geneList(c("CNF", "CNf"))
+  DEGs[[paste("CnF", "Cnf")]] <- geneList(c("CnF", "Cnf"))
+}
 
-save(DEGs, file = "./Data/DEGsListsFiltered.RData")
+save(DEGs, file = "./Data/DEGsListsFilteredNoIronStarv.RData")
+
 ```
 
 # Clustering global
@@ -96,12 +111,19 @@ On commence par prendre l'union de toutes les listes de DEGs : 12 comparaisons a
 ```{r global}
 load("./Data/normalized.count_At.RData")
 load("./Data/AGIToEntrez.RDAta")
+load("./Data/filteredData.RData")
+
+
+if(removeIronStarv) data <- data[,grepl("F", colnames(data))]
 
 #heatmap(normalized.count[sample(genes, size = 700),!grepl("cNF_1", colnames(normalized.count))])
 
-clustersOntology <- function(DEGs){
+clustersOntology <- function(DEGs, fileToSave, nb_clusters=4:10){
   genes <- unique(unlist(DEGs))
-  cluster <- clustering(genes, round(normalized.count, 0), nb_clusters = 7:14)
+  #cluster <- clustering(genes, round(normalized.count, 0), nb_clusters = 7:14)
+  cluster <- clustering(genes, data, nb_clusters = nb_clusters, norm = "TMM")
+  
+  save(cluster, file = paste0("~/Documents/ShinyApp/ClusteringAnalysis/Clusterings/", fileToSave, "NoIronStarv.RData"))
   
   entrez <- list()
   idsList <- cluster[[1]]
@@ -112,50 +134,50 @@ clustersOntology <- function(DEGs){
   res <- compareOnt(entrez, universe = na.omit(as.character(AGIToEntrez$entrezgene_id)))
 }
 
-clustersOntology(DEGs)
+clustersOntology(DEGs, "Global", nb_clusters=4:8)
 ```
 
 # Genes CO2
 
 ```{r co2}
-clustersOntology(DEGs[FactorCO2])
+clustersOntology(DEGs[FactorCO2], "CO2", nb_clusters=4:8)
 ```
 
 # Genes Nitrate
 
 ```{r nitrate}
-clustersOntology(DEGs[FactorNitrate])
+clustersOntology(DEGs[FactorNitrate], "Nitrate",nb_clusters=4:8)
 ```
 
 
 # Genes Fer
 
 ```{r iron}
-clustersOntology(DEGs[FactorIron])
+if(!removeIronStarv) clustersOntology(DEGs[FactorIron], "Iron")
 ```
 
 
 # CO2 contrôles
 
 ```{r co21}
-clustersOntology(DEGs$`cNF CNF`)
+clustersOntology(DEGs$`cNF CNF`, translateToOSX(c("cNF", "CNF")),nb_clusters=4:6)
 ```
 
 # CO2 faibles nitrates
 
 
 ```{r co22}
-clustersOntology(DEGs$`cnF CnF`)
+clustersOntology(DEGs$`cnF CnF`, translateToOSX(c("cnF", "CnF")),nb_clusters=4:8)
 ```
 
 # Nitrate contrôle
 
 ```{r nitrates1}
-clustersOntology(DEGs$`cNF cnF`)
+clustersOntology(DEGs$`cNF cnF`, translateToOSX(c("cNF", "cnF")),nb_clusters=4:8)
 ```
 
 # Nitrate fort CO2
 
 ```{r nitrates2}
-clustersOntology(DEGs$`CNF CnF`)
+clustersOntology(DEGs$`CNF CnF`, translateToOSX(c("CNF", "CnF")),nb_clusters=4:8)
 ```
