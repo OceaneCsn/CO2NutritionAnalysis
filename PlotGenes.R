@@ -41,6 +41,15 @@ ggplot(data = d[d$Role=="Repressor",], aes(x=group, y=value, fill=group)) + geom
 
 load("Data/DEGsListsFiltered.RData")
 nGenes <- read.table("./Data/N_regulated_genes.txt", h=TRUE, sep = '\t')
+save(nGenes, file = "./Data/NitrateGenes.RData" )
+
+
+nitrate_genes <- list()
+for(paper in colnames(nGenes))
+  nitrate_genes[[paper]] <- toupper(nGenes[,paper][grepl("AT", toupper(nGenes[,paper]))])
+save(nitrate_genes, file="Data/NitrateGenesList.RData")
+
+
 nGenes$Wang_2004 <- toupper(nGenes$Wang_2004)
 nGenes$HN_induced_Widiez_2011 <- toupper(nGenes$HN_induced_Widiez_2011)
 
@@ -50,9 +59,6 @@ lengths(DEGs)
 df <- data.frame(Comparison = names(DEGs), DEGs = lengths(DEGs))
 
 
-nitrate_genes <- list()
-for(paper in colnames(nGenes))
-  nitrate_genes[[paper]] <- toupper(nGenes[,paper][grepl("AT", toupper(nGenes[,paper]))])
 
 library(nVennR)
 myV <- plotVenn(nitrate_genes, nCycles = 2000)
@@ -64,7 +70,7 @@ Vennerable::plot(Venn, doWeights=F, type="battle")
 
 ggVennDiagram(nitrate_genes) + scale_fill_distiller(palette = "Spectral") + ggtitle("Common genes of nitrate pathways")
 
-s
+
 getCommonGenes <- function(comp, littG){
   return(length(intersect(DEGs[[as.character(comp)]], nGenes[,littG]))/length(DEGs[[as.character(comp)]])*100)
 }
