@@ -50,12 +50,25 @@ lengths(DEGs)
 df <- data.frame(Comparison = names(DEGs), DEGs = lengths(DEGs))
 
 
+nitrate_genes <- list()
+for(paper in colnames(nGenes))
+  nitrate_genes[[paper]] <- toupper(nGenes[,paper][grepl("AT", toupper(nGenes[,paper]))])
 
+library(nVennR)
+myV <- plotVenn(nitrate_genes, nCycles = 2000)
+showSVG(myV)
+
+library("Vennerable")
+Venn <- Venn(nitrate_genes)
+Vennerable::plot(Venn, doWeights=F, type="battle")
+
+ggVennDiagram(nitrate_genes) + scale_fill_distiller(palette = "Spectral") + ggtitle("Common genes of nitrate pathways")
+
+s
 getCommonGenes <- function(comp, littG){
   return(length(intersect(DEGs[[as.character(comp)]], nGenes[,littG]))/length(DEGs[[as.character(comp)]])*100)
 }
 getCommonGenes(comp = "cnF CnF", littG = "Wang_2004")
-
 getCommonGenes(comp = "cnF CnF", littG = "Wang_2004")
 
 df$Wang_2004 <- sapply(X = df$Comparison,getCommonGenes, littG ="Wang_2004")
